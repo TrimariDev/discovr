@@ -9,10 +9,11 @@ import type { ArtistNode, GraphSnapshot } from "@/lib/types";
 type Props = {
   graph: GraphSnapshot;
   selectedArtist: ArtistNode | null;
+  onRecenterArtist: (artist: ArtistNode) => void;
   onSelectArtist: (artist: ArtistNode | null) => void;
 };
 
-export function GraphCanvas({ graph, selectedArtist, onSelectArtist }: Props) {
+export function GraphCanvas({ graph, selectedArtist, onRecenterArtist, onSelectArtist }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const graphologyRef = useRef<Graphology | null>(null);
   const sigmaRef = useRef<Sigma | null>(null);
@@ -78,7 +79,19 @@ export function GraphCanvas({ graph, selectedArtist, onSelectArtist }: Props) {
       graphologyRef.current = graphology;
       sigmaRef.current = renderer;
 
-      renderer.on("clickNode", ({ node }) => onSelectArtist(nodeById.get(node) ?? null));
+      renderer.on("clickNode", ({ node }) => {
+        const artist = nodeById.get(node);
+
+        if (!artist) {
+          return;
+        }
+
+        onSelectArtist(artist);
+
+        if (artist.id !== graph.meta.seedArtistId) {
+          onRecenterArtist(artist);
+        }
+      });
       renderer.on("clickStage", () => onSelectArtist(null));
 
       function animate(now: number) {
@@ -126,7 +139,7 @@ export function GraphCanvas({ graph, selectedArtist, onSelectArtist }: Props) {
         sigmaRef.current = null;
       }
     };
-  }, [graph, nodeById, onSelectArtist]);
+  }, [graph, nodeById, onRecenterArtist, onSelectArtist]);
 
   useEffect(() => {
     const graphology = graphologyRef.current;
