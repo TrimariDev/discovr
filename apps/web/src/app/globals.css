@@ -79,14 +79,47 @@ h1 {
   position: relative;
 }
 
-.search input {
+.searchField {
+  isolation: isolate;
+  position: relative;
+}
+
+.searchField input {
   background: var(--panel-strong);
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--text);
   outline: none;
-  padding: 14px 16px;
+  padding: 14px 52px 14px 16px;
   width: 100%;
+}
+
+.searchClear {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  display: flex;
+  height: 28px;
+  border: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 700;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  width: 28px;
+}
+
+.searchClear:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #8ff0c9;
 }
 
 .searchResults {

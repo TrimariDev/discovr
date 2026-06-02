@@ -7,32 +7,51 @@ import type { ArtistNode, ArtistSearchResult, GraphSnapshot } from "@/lib/types"
 type Props = {
   onGraphLoaded: (graph: GraphSnapshot) => void;
   onArtistSelected: (artist: ArtistNode | null) => void;
+  onClear: () => void;
 };
 
-export function SearchBar({ onGraphLoaded, onArtistSelected }: Props) {
+export function SearchBar({ onGraphLoaded, onArtistSelected, onClear }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ArtistSearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isSelectionLocked, setIsSelectionLocked] = useState(false);
+  const normalizedQuery = query.trim();
 
   useEffect(() => {
-    if (query.trim().length < 2) {
+    if (isSelectionLocked) {
       setResults([]);
       return;
     }
 
+    if (normalizedQuery.length < 1) {
+      setResults([]);
+      return;
+    }
+
+    let active = true;
     const timeout = window.setTimeout(async () => {
       try {
         setError(null);
-        setResults(await searchArtists(query));
+        const nextResults = await searchArtists(normalizedQuery);
+
+        if (active) {
+          setResults(nextResults);
+        }
       } catch {
-        setError("Search unavailable");
+        if (active) {
+          setError("Search unavailable");
+        }
       }
     }, 300);
 
-    return () => window.clearTimeout(timeout);
-  }, [query]);
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+    };
+  }, [isSelectionLocked, normalizedQuery]);
 
   async function selectArtist(artist: ArtistSearchResult) {
+    setIsSelectionLocked(true);
     setQuery(artist.name);
     setResults([]);
     onArtistSelected(null);
@@ -60,14 +79,35 @@ export function SearchBar({ onGraphLoaded, onArtistSelected }: Props) {
     }
   }
 
+  function clearSearch() {
+    setQuery("");
+    setResults([]);
+    setError(null);
+    setIsSelectionLocked(false);
+    onArtistSelected(null);
+    onClear();
+  }
+
   return (
     <div className="search">
-      <input
-        aria-label="Search artist"
-        placeholder="Search an artist"
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-      />
+      <div className="searchField">
+        <input
+          aria-label="Search artist"
+          autoComplete="off"
+          placeholder="Search an artist"
+          value={query}
+          onChange={(event) => {
+            setIsSelectionLocked(false);
+            setError(null);
+            setQuery(event.target.value);
+          }}
+        />
+        {(normalizedQuery.length > 0 || isSelectionLocked) && (
+          <button type="button" className="searchClear" aria-label="Clear search" onClick={clearSearch}>
+            <span aria-hidden="true">×</span>
+          </button>
+        )}
+      </div>
       {(results.length > 0 || error) && (
         <ul className="searchResults panel">
           {error && <li>{error}</li>}
@@ -83,4 +123,3 @@ export function SearchBar({ onGraphLoaded, onArtistSelected }: Props) {
     </div>
   );
 }
-
