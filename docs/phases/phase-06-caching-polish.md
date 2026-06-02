@@ -6,8 +6,8 @@ Reduce repeated work and make local operation reliable.
 
 ## Tasks
 
-- Add Redis or database-backed graph cache behavior.
-- Reuse fresh `GraphSnapshot` records.
+- Improve in-memory graph cache behavior.
+- Reuse fresh graph payloads during the API process lifetime.
 - Add edge explanation route.
 - Add basic smoke tests.
 - Validate README commands from a clean checkout.

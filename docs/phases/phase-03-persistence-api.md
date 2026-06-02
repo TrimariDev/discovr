@@ -1,20 +1,18 @@
-# Phase 3: Persistence and API Contracts
+# Phase 3: Lightweight API Contracts
 
 ## Objective
 
-Persist artists, tags, weighted edges, and graph snapshots behind explicit API contracts.
+Keep the first MVP database-free while preserving explicit API contracts.
 
 ## Tasks
 
-- Finalize Prisma models for `Artist`, `ArtistTag`, `ArtistEdge`, and `GraphSnapshot`.
-- Add Prisma client setup.
 - Implement artist search/bootstrap route.
-- Implement graph route with snapshot lookup.
-- Save graph snapshot payloads after generation.
+- Implement graph route with in-memory snapshot lookup.
+- Cache generated graph payloads briefly.
 - Keep API response types explicit and shared where practical.
 
 ## Exit Criteria
 
-- Local Postgres stores artist and graph data.
-- Repeated graph requests can reuse saved snapshots.
+- No local database is required.
+- Repeated graph requests can reuse cached snapshots during the API process lifetime.
 - API payloads match the documented contract.

@@ -7,7 +7,6 @@ Tasks are ordered to keep the MVP shippable at every stage.
 - [x] Create monorepo folders for `apps/web`, `services/api`, `workers/graph`, and `infra`.
 - [x] Add root workspace files.
 - [x] Add `.env.example`.
-- [x] Add Docker Compose for Postgres and Redis.
 - [x] Add README with local run path.
 - [ ] Install and lock dependencies.
 
@@ -20,13 +19,10 @@ Tasks are ordered to keep the MVP shippable at every stage.
 - [ ] Render graph in React with Sigma.js.
 - [ ] Add node click details panel.
 
-## Phase 3: Persistence and API Contracts
+## Phase 3: Lightweight API Contracts
 
-- [x] Add initial Prisma schema.
-- [ ] Add Prisma client setup.
-- [ ] Implement artist upsert logic.
-- [ ] Implement edge upsert logic.
-- [ ] Implement graph snapshot read/write.
+- [x] Keep artist search/bootstrap simple and database-free.
+- [x] Add short-lived in-memory graph cache.
 - [ ] Add explicit shared API response types.
 
 ## Phase 4: Graph Worker
@@ -49,8 +45,8 @@ Tasks are ordered to keep the MVP shippable at every stage.
 
 ## Phase 6: Caching and Polish
 
-- [ ] Add Redis cache helper.
-- [ ] Reuse fresh graph snapshots.
+- [x] Add memory cache helper.
+- [x] Reuse fresh graph snapshots in memory.
 - [ ] Add edge explanation route.
 - [ ] Add basic tests or smoke checks.
 - [ ] Verify local developer commands.

@@ -8,14 +8,13 @@ Build a local-first MVP for Discovr: a music discovery app where a user searches
 
 ## Architecture Principle
 
-The frontend renders graph snapshots only. Graph construction, clustering, layout, persistence, and caching belong in backend services or the Python graph worker.
+The frontend renders graph snapshots only. Graph construction, clustering, layout, and caching belong in backend services or the Python graph worker. For the first MVP, persistence is intentionally postponed; the API uses live Last.fm calls plus a short-lived in-memory graph cache.
 
 ## Phases
 
 1. **Foundation and Scaffolding**
    - Create the monorepo structure.
    - Add package/workspace configuration.
-   - Add Docker Compose for Postgres and Redis.
    - Add environment examples and developer docs.
 
 2. **Vertical Slice**
@@ -25,11 +24,11 @@ The frontend renders graph snapshots only. Graph construction, clustering, layou
    - Render an interactive Sigma.js graph.
    - Use deterministic fallback layout until the worker is connected.
 
-3. **Persistence and API Contracts**
-   - Add Prisma schema for artists, tags, edges, and snapshots.
+3. **Lightweight API Contracts**
    - Implement search/bootstrap endpoints.
    - Implement graph snapshot endpoint.
-   - Save artist nodes, weighted edges, and graph snapshots.
+   - Keep payload contracts explicit.
+   - Cache graph payloads in memory.
 
 4. **Graph Worker**
    - Add FastAPI worker.
@@ -46,18 +45,17 @@ The frontend renders graph snapshots only. Graph construction, clustering, layou
    - Add loading and error states.
 
 6. **Caching and Polish**
-   - Reuse fresh graph snapshots.
-   - Add Redis or database-backed cache behavior.
+   - Reuse fresh in-memory graph snapshots.
+   - Add optional persistence later if the product loop needs it.
    - Add edge explanation endpoint.
    - Harden errors and README run instructions.
 
 ## v0.1 Done Means
 
 - A developer can set `LASTFM_API_KEY`.
-- Postgres and Redis can start locally.
 - The app can search for an artist such as Radiohead.
 - At least 30 artist nodes render in an interactive graph.
 - Nodes are positioned, sized, and colored by community.
 - Clicking a node opens an artist details panel.
-- A graph snapshot is saved or cached.
+- A graph snapshot is cached in memory.
 - UI errors do not crash the app.
