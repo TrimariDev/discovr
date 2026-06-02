@@ -52,12 +52,12 @@ export function GraphCanvas({ graph, selectedArtist, onRecenterArtist, onSelectA
 
       displayNodes.forEach((node, index) => {
         const isCurrent = currentNodeIds.has(node.id);
+        const previousPosition = previousPositions.get(node.id);
         const neighborIndex = Math.max(index - 1, 0);
         const introAngle = (neighborIndex / neighborCount) * Math.PI * 2;
         const introRadius = node.id === graph.meta.seedArtistId ? 0 : 0.35 + (neighborIndex % 5) * 0.12;
         const fallbackIntroX = Math.cos(introAngle) * introRadius;
         const fallbackIntroY = Math.sin(introAngle) * introRadius;
-        const previousPosition = previousPositions.get(node.id);
         const seedOrbitRadius = node.id === graph.meta.seedArtistId ? 0 : 0.12 + (neighborIndex % 4) * 0.025;
         const seedOrbitX = (previousSeedPosition?.x ?? 0) + Math.cos(introAngle) * seedOrbitRadius;
         const seedOrbitY = (previousSeedPosition?.y ?? 0) + Math.sin(introAngle) * seedOrbitRadius;
