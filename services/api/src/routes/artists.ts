@@ -7,7 +7,7 @@ artistsRouter.get("/search", async (request, response, next) => {
   try {
     const query = String(request.query.q ?? "").trim();
 
-    if (query.length < 2) {
+    if (query.length < 1) {
       response.json({ results: [] });
       return;
     }
@@ -17,4 +17,3 @@ artistsRouter.get("/search", async (request, response, next) => {
     next(error);
   }
 });
-

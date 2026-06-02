@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { ArtistPanel } from "@/components/ArtistPanel";
 import { CommunityLegend } from "@/components/CommunityLegend";
 import { GraphCanvas } from "@/components/GraphCanvas";
@@ -27,27 +27,14 @@ export default function Home() {
   const [graph, setGraph] = useState<GraphSnapshot>(emptyGraph);
   const [selectedArtist, setSelectedArtist] = useState<ArtistNode | null>(null);
 
-  async function loadGraphForArtist(artist: Pick<ArtistNode, "id" | "name">) {
-    setSelectedArtist(null);
-    setGraph({
-      status: "loading",
-      graphId: null,
-      nodes: [],
-      edges: [],
-      communities: [],
-      meta: {
-        seedArtistId: artist.id,
-        depth: 1,
-        limit: 60,
-        algorithm: "loading"
-      }
-    });
-
-    try {
-      setGraph(await loadArtistGraph(artist.id));
-    } catch {
+  const loadGraphForArtist = useCallback(async (
+    artist: Pick<ArtistNode, "id" | "name">,
+    options: { preserveCurrentGraph?: boolean } = {}
+  ) => {
+    if (!options.preserveCurrentGraph) {
+      setSelectedArtist(null);
       setGraph({
-        status: "error",
+        status: "loading",
         graphId: null,
         nodes: [],
         edges: [],
@@ -56,11 +43,36 @@ export default function Home() {
           seedArtistId: artist.id,
           depth: 1,
           limit: 60,
-          algorithm: "error"
+          algorithm: "loading"
         }
       });
     }
-  }
+
+    try {
+      setGraph(await loadArtistGraph(artist.id));
+      setSelectedArtist(null);
+    } catch {
+      if (!options.preserveCurrentGraph) {
+        setGraph({
+          status: "error",
+          graphId: null,
+          nodes: [],
+          edges: [],
+          communities: [],
+          meta: {
+            seedArtistId: artist.id,
+            depth: 1,
+            limit: 60,
+            algorithm: "error"
+          }
+        });
+      }
+    }
+  }, []);
+
+  const recenterArtist = useCallback((artist: ArtistNode) => {
+    void loadGraphForArtist(artist, { preserveCurrentGraph: true });
+  }, [loadGraphForArtist]);
 
   return (
     <main className="appShell">
@@ -69,13 +81,20 @@ export default function Home() {
           <p className="eyebrow">Discovr</p>
           <h1>Discover music as a living map.</h1>
         </div>
-        <SearchBar onGraphLoaded={setGraph} onArtistSelected={setSelectedArtist} />
+        <SearchBar
+          onGraphLoaded={setGraph}
+          onArtistSelected={setSelectedArtist}
+          onClear={() => {
+            setGraph(emptyGraph);
+            setSelectedArtist(null);
+          }}
+        />
       </section>
 
       <GraphCanvas
         graph={graph}
         selectedArtist={selectedArtist}
-        onRecenterArtist={loadGraphForArtist}
+        onRecenterArtist={recenterArtist}
         onSelectArtist={setSelectedArtist}
       />
       <GraphControls onReset={() => { setGraph(emptyGraph); setSelectedArtist(null); }} />

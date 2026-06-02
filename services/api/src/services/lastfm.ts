@@ -6,9 +6,27 @@ export type LastFmSimilarArtist = {
   image?: Array<{ "#text": string; size: string }>;
 };
 
+export type LastFmArtistSearchResult = {
+  name: string;
+  mbid?: string;
+  url?: string;
+  image?: Array<{ "#text": string; size: string }>;
+  listeners?: string;
+};
+
 type LastFmSimilarResponse = {
   similarartists?: {
     artist?: LastFmSimilarArtist[];
+  };
+  error?: number;
+  message?: string;
+};
+
+type LastFmArtistSearchResponse = {
+  results?: {
+    artistmatches?: {
+      artist?: LastFmArtistSearchResult | LastFmArtistSearchResult[];
+    };
   };
   error?: number;
   message?: string;
@@ -52,6 +70,34 @@ export async function getSimilarArtists(input: {
   return payload.similarartists?.artist ?? [];
 }
 
+export async function searchArtists(input: {
+  query: string;
+  limit?: number;
+}): Promise<LastFmArtistSearchResult[]> {
+  const apiKey = process.env.LASTFM_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("LASTFM_API_KEY is not configured");
+  }
+
+  const url = new URL(lastFmApiUrl);
+  url.searchParams.set("method", "artist.search");
+  url.searchParams.set("api_key", apiKey);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("artist", input.query);
+  url.searchParams.set("limit", String(input.limit ?? 12));
+
+  const response = await fetchWithRetry(url);
+  const payload = (await response.json()) as LastFmArtistSearchResponse;
+
+  if (!response.ok || payload.error) {
+    throw new Error(payload.message ?? "Last.fm artist search failed");
+  }
+
+  const artists = payload.results?.artistmatches?.artist ?? [];
+  return Array.isArray(artists) ? artists : [artists];
+}
+
 async function fetchWithRetry(url: URL, attempts = 3): Promise<Response> {
   let lastError: unknown;
 
@@ -73,4 +119,3 @@ async function fetchWithRetry(url: URL, attempts = 3): Promise<Response> {
 
   throw lastError instanceof Error ? lastError : new Error("Last.fm request failed");
 }
-

@@ -1,8 +1,30 @@
-import { getSimilarArtists } from "./lastfm.js";
+import { getSimilarArtists, searchArtists } from "./lastfm.js";
 import type { ArtistSearchResult, GraphSnapshot } from "../types/graph.js";
 import { getCached, setCached } from "./cache.js";
 
 const graphCacheTtlMs = 1000 * 60 * 30;
+const popularArtistHints = [
+  "Radiohead",
+  "The Rolling Stones",
+  "Ron Wood",
+  "Roxy Music",
+  "Robbie Williams",
+  "Rod Stewart",
+  "Röyksopp",
+  "Rosalía",
+  "R.E.M.",
+  "Red Hot Chili Peppers",
+  "The Beatles",
+  "David Bowie",
+  "Pink Floyd",
+  "Nirvana",
+  "The Smiths",
+  "Thom Yorke",
+  "Fleetwood Mac",
+  "Bob Dylan",
+  "The Strokes",
+  "Arctic Monkeys"
+];
 
 function normalizeName(name: string) {
   return name.trim().toLowerCase();
@@ -24,6 +46,26 @@ function imageUrlFromLastFm(images: Array<{ "#text": string; size: string }> | u
     images?.find((image) => image.size === "large")?.["#text"] ||
     images?.find((image) => image["#text"])?.["#text"] ||
     null;
+}
+
+function fuzzyScore(query: string, candidate: string) {
+  const normalizedQuery = normalizeName(query);
+  const normalizedCandidate = normalizeName(candidate);
+  const words = normalizedCandidate.split(/\s+/);
+
+  if (normalizedCandidate === normalizedQuery) {
+    return 0;
+  }
+
+  if (normalizedCandidate.startsWith(normalizedQuery) || words.some((word) => word.startsWith(normalizedQuery))) {
+    return 1;
+  }
+
+  if (normalizedCandidate.includes(normalizedQuery)) {
+    return 2;
+  }
+
+  return 3;
 }
 
 function targetPositionForArtist(input: {
@@ -49,16 +91,54 @@ function targetPositionForArtist(input: {
 
 export async function bootstrapArtistSearch(query: string): Promise<ArtistSearchResult[]> {
   const normalized = normalizeName(query);
+  const cachedResults = getCached<ArtistSearchResult[]>(`artist-search:${normalized}`);
 
-  return [
-    {
-      id: normalized,
-      name: query.trim(),
-      mbid: null,
-      imageUrl: null,
+  if (cachedResults) {
+    return cachedResults;
+  }
+
+  const lastFmResults = await searchArtists({ query, limit: 20 });
+  const hintResults = popularArtistHints
+    .filter((name) => fuzzyScore(query, name) < 3)
+    .map((name) => ({
+      name,
+      mbid: undefined,
+      image: undefined,
+      listeners: "999999999"
+    }));
+  const seen = new Set<string>();
+  const results = [...hintResults, ...lastFmResults]
+    .filter((artist) => artist.name?.trim())
+    .map((artist) => ({
+      artist,
+      normalizedName: normalizeName(artist.name),
+      score: fuzzyScore(query, artist.name),
+      listeners: Number(artist.listeners ?? 0)
+    }))
+    .filter((item) => {
+      if (seen.has(item.normalizedName)) {
+        return false;
+      }
+
+      seen.add(item.normalizedName);
+      return true;
+    })
+    .sort((left, right) => left.score - right.score || right.listeners - left.listeners)
+    .slice(0, 8)
+    .map(({ artist }) => ({
+      id: normalizeName(artist.name),
+      name: artist.name,
+      mbid: artist.mbid || null,
+      imageUrl: imageUrlFromLastFm(artist.image),
       tags: []
-    }
-  ];
+    }));
+
+  const finalResults = results.length > 0
+    ? results
+    : [{ id: normalized, name: query.trim(), mbid: null, imageUrl: null, tags: [] }];
+
+  setCached(`artist-search:${normalized}`, finalResults, 1000 * 60 * 10);
+  return finalResults;
 }
 
 export async function buildArtistGraph(input: { artistId: string; depth: number; limit: number }): Promise<GraphSnapshot> {
