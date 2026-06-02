@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Artist {
+  id             String       @id @default(uuid())
+  mbid           String?      @unique
+  name           String
+  normalizedName String       @unique
+  imageUrl       String?
+  listeners      Int?
+  playcount      Int?
+  tags           ArtistTag[]
+  outgoingEdges  ArtistEdge[] @relation("OutgoingEdges")
+  incomingEdges  ArtistEdge[] @relation("IncomingEdges")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model ArtistTag {
+  id       String @id @default(uuid())
+  artistId String
+  tag      String
+  weight   Float  @default(1)
+  source   String @default("lastfm")
+  artist   Artist @relation(fields: [artistId], references: [id])
+
+  @@unique([artistId, tag])
+}
+
+model ArtistEdge {
+  id               String   @id @default(uuid())
+  sourceArtistId   String
+  targetArtistId   String
+  weight           Float
+  lastfmSimilarity Float?
+  tagSimilarity    Float?
+  source           String   @default("lastfm")
+  sourceArtist     Artist   @relation("OutgoingEdges", fields: [sourceArtistId], references: [id])
+  targetArtist     Artist   @relation("IncomingEdges", fields: [targetArtistId], references: [id])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([sourceArtistId, targetArtistId])
+}
+
+model GraphSnapshot {
+  id           String   @id @default(uuid())
+  seedArtistId String
+  depth        Int
+  limit        Int
+  algorithm    String
+  status       String
+  nodeCount    Int
+  edgeCount    Int
+  payload      Json
+  generatedAt  DateTime @default(now())
+}
+

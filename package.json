@@ -1,0 +1,13 @@
+{
+  "name": "discovr",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "build": "pnpm --filter web build && pnpm --filter api build",
+    "typecheck": "pnpm --filter web typecheck && pnpm --filter api typecheck"
+  }
+}
+
