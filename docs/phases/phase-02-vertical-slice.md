@@ -6,12 +6,12 @@ Prove the core product loop: search an artist, fetch similar artists, generate a
 
 ## Tasks
 
-- Implement Last.fm similar artist client with graceful errors.
-- Search/bootstrap local artist data.
-- Build a depth-1 graph for one seed artist.
-- Generate fallback layout and provisional communities before worker integration.
-- Render nodes and edges in Sigma.js.
-- Show artist details on node click.
+- [x] Implement Last.fm similar artist client with graceful errors.
+- [x] Search/bootstrap local artist data.
+- [x] Build a depth-1 graph for one seed artist.
+- [x] Generate fallback layout and provisional communities before worker integration.
+- [x] Render nodes and edges in Sigma.js.
+- [x] Show artist details on node click.
 
 ## Exit Criteria
 

@@ -16,3 +16,16 @@ Keep the first MVP database-free while preserving explicit API contracts.
 - No local database is required.
 - Repeated graph requests can reuse cached snapshots during the API process lifetime.
 - API payloads match the documented contract.
+
+## Shared types (`packages/contracts`)
+
+| Route | Response type |
+|-------|----------------|
+| `GET /health` | `HealthCheckResponse` |
+| `GET /api/artists/search` | `ArtistSearchResponse` |
+| `GET /api/artists/info` | `ArtistInfoResponse` |
+| `GET /api/graphs/artist/:artistId` | `GetArtistGraphResponse` |
+| `POST /api/graphs/tags` | `PostGraphTagsResponse` |
+| 4xx/5xx JSON errors | `ApiErrorResponse` |
+
+Domain models (`GraphNode`, `GraphSnapshot`, `ArtistSearchResult`, …) live alongside these in the same package. The web client validates responses with `isArtistSearchResponse`, `isGraphSnapshot`, etc.

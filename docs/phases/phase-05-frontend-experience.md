@@ -16,5 +16,13 @@ Make the MVP feel like a useful music map rather than a raw graph dump.
 
 ## Exit Criteria
 
-- The default flow is smooth from search to graph inspection.
-- The UI handles empty, loading, and error states without crashing.
+- [x] The default flow is smooth from search to graph inspection.
+- [x] The UI handles empty, loading, and error states without crashing.
+
+## Implemented
+
+- Debounced search (300ms) with “Searching…” status in the dropdown.
+- Graph placeholders: idle, loading spinner, and error copy.
+- `CommunityLegend` — cluster colors aligned with `communityPalette`.
+- `GraphControls` — reset view, focus seed, clear tag filters.
+- Hover highlights neighbors (dim non-neighbors); click opens panel and recenters on non-seed nodes.

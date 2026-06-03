@@ -14,6 +14,13 @@ Reduce repeated work and make local operation reliable.
 
 ## Exit Criteria
 
-- Repeated graph loads avoid unnecessary Last.fm and worker calls.
-- Common failures produce useful UI/API errors.
-- The MVP can be run locally from README instructions.
+- [x] Repeated graph loads avoid unnecessary Last.fm and worker calls.
+- [x] Common failures produce useful UI/API errors.
+- [x] The MVP can be run locally from README instructions.
+
+## Implemented
+
+- `GET /api/edges/explain` — similarity edge, shared tags, same Leiden community (uses in-memory graph + tag cache).
+- Enriched graphs written back to the graph cache after `POST /api/graphs/enrich`.
+- `pnpm smoke` — health, search, graph, and edge explain checks (`scripts/smoke.mjs`).
+- README updated for ports 3000 / 4000 / 8000 and smoke workflow.
