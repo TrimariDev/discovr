@@ -1,21 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { titleCaseArtistName } from "@discovr/contracts";
 import { loadArtistGraph, searchArtists } from "@/lib/api";
-import type { ArtistNode, ArtistSearchResult, GraphSnapshot } from "@/lib/types";
+import { isEchoSearchResult, matchesSearchPrefix } from "@/lib/search";
+import type { ArtistSearchResult, GraphSnapshot } from "@/lib/types";
 
 type Props = {
   onGraphLoaded: (graph: GraphSnapshot) => void;
-  onArtistSelected: (artist: ArtistNode | null) => void;
+  onArtistSelected: (artist: Pick<ArtistSearchResult, "id" | "name" | "mbid"> | null) => void;
   onClear: () => void;
 };
 
 export function SearchBar({ onGraphLoaded, onArtistSelected, onClear }: Props) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const latestQueryRef = useRef("");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ArtistSearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
   const [isSelectionLocked, setIsSelectionLocked] = useState(false);
   const normalizedQuery = query.trim();
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  latestQueryRef.current = normalizedQuery;
+
+  const visibleResults = useMemo(() => {
+    if (normalizedQuery.length === 0) {
+      return results;
+    }
+
+    return results.filter(
+      (artist) =>
+        !isEchoSearchResult(artist, normalizedQuery) &&
+        matchesSearchPrefix(artist.name, normalizedQuery)
+    );
+  }, [normalizedQuery, results]);
 
   useEffect(() => {
     if (isSelectionLocked) {
@@ -25,21 +48,29 @@ export function SearchBar({ onGraphLoaded, onArtistSelected, onClear }: Props) {
 
     if (normalizedQuery.length < 1) {
       setResults([]);
+      setIsSearching(false);
       return;
     }
 
     let active = true;
+    const queryForRequest = normalizedQuery;
+    setIsSearching(true);
+
     const timeout = window.setTimeout(async () => {
       try {
         setError(null);
-        const nextResults = await searchArtists(normalizedQuery);
+        const nextResults = await searchArtists(queryForRequest);
 
-        if (active) {
+        if (active && latestQueryRef.current === queryForRequest) {
           setResults(nextResults);
         }
       } catch {
-        if (active) {
+        if (active && latestQueryRef.current === queryForRequest) {
           setError("Search unavailable");
+        }
+      } finally {
+        if (active && latestQueryRef.current === queryForRequest) {
+          setIsSearching(false);
         }
       }
     }, 300);
@@ -54,7 +85,7 @@ export function SearchBar({ onGraphLoaded, onArtistSelected, onClear }: Props) {
     setIsSelectionLocked(true);
     setQuery(artist.name);
     setResults([]);
-    onArtistSelected(null);
+    onArtistSelected({ id: artist.id, name: artist.name, mbid: artist.mbid ?? null });
     onGraphLoaded({
       status: "loading",
       graphId: null,
@@ -86,14 +117,24 @@ export function SearchBar({ onGraphLoaded, onArtistSelected, onClear }: Props) {
     setIsSelectionLocked(false);
     onArtistSelected(null);
     onClear();
+
+    // Restore focus after clearing state, so typing can resume immediately.
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
   }
 
   return (
     <div className="search">
-      <div className="searchField">
+      <div className="searchField" suppressHydrationWarning>
         <input
+          ref={inputRef}
           aria-label="Search artist"
           autoComplete="off"
+          suppressHydrationWarning
+          data-lpignore="true"
+          data-1p-ignore="true"
+          data-bwignore="true"
           placeholder="Search an artist"
           value={query}
           onChange={(event) => {
@@ -108,13 +149,14 @@ export function SearchBar({ onGraphLoaded, onArtistSelected, onClear }: Props) {
           </button>
         )}
       </div>
-      {(results.length > 0 || error) && (
-        <ul className="searchResults panel">
-          {error && <li>{error}</li>}
-          {results.map((artist) => (
+      {(visibleResults.length > 0 || error || isSearching) && (
+        <ul className="searchResults panel" role="listbox" aria-label="Artist search results">
+          {isSearching && <li className="searchStatus">Searching…</li>}
+          {error && <li className="searchStatus">{error}</li>}
+          {visibleResults.map((artist) => (
             <li key={artist.id}>
               <button type="button" onClick={() => selectArtist(artist)}>
-                {artist.name}
+                {titleCaseArtistName(artist.name)}
               </button>
             </li>
           ))}

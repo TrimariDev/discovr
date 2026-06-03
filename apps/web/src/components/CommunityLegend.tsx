@@ -1,32 +1,31 @@
 "use client";
 
 import { communityColor } from "@/lib/graph";
-import type { ArtistNode, Community } from "@/lib/types";
+import type { GraphCommunity } from "@/lib/types";
 
 type Props = {
-  communities: Community[];
-  nodes: ArtistNode[];
+  communities: GraphCommunity[];
+  visible: boolean;
 };
 
-export function CommunityLegend({ communities, nodes }: Props) {
-  if (communities.length === 0) {
+export function CommunityLegend({ communities, visible }: Props) {
+  if (!visible || communities.length === 0) {
     return null;
   }
 
+  const items = [...communities].sort((left, right) => left.id - right.id).slice(0, 8);
+
   return (
-    <aside className="legend floatingPanel panel" aria-label="Communities">
-      <strong>Communities</strong>
-      <ul className="legendList">
-        {communities.map((community) => {
-          const count = nodes.filter((node) => node.community === community.id).length;
-          return (
-            <li key={community.id} style={{ borderColor: communityColor(community.id) }}>
-              {community.label} ({count})
-            </li>
-          );
-        })}
+    <section className="communityLegend panel" aria-label="Community legend">
+      <p className="communityLegendTitle">Clusters</p>
+      <ul className="communityLegendList">
+        {items.map((community) => (
+          <li key={community.id}>
+            <span className="communityLegendSwatch" style={{ backgroundColor: communityColor(community.id) }} />
+            <span className="communityLegendLabel">{community.label || `Cluster ${community.id}`}</span>
+          </li>
+        ))}
       </ul>
-    </aside>
+    </section>
   );
 }
-
