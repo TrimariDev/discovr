@@ -9,24 +9,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { glassCardClassName } from "@/lib/panel";
 import { cn } from "@/lib/utils";
 import { enrichGraphStructure, loadArtistGraph } from "@/lib/api";
+import { createErrorGraph, createIdleGraph, createLoadingGraph } from "@/lib/graph-snapshot";
 import type { ArtistNode, ArtistSearchResult, GraphSnapshot } from "@/lib/types";
 
-const emptyGraph: GraphSnapshot = {
-  status: "idle",
-  graphId: null,
-  nodes: [],
-  edges: [],
-  communities: [],
-  meta: {
-    seedArtistId: null,
-    depth: 1,
-    limit: 100,
-    algorithm: "pending"
-  }
-};
-
 export default function Home() {
-  const [graph, setGraph] = useState<GraphSnapshot>(emptyGraph);
+  const [graph, setGraph] = useState<GraphSnapshot>(createIdleGraph);
   const [selectedArtist, setSelectedArtist] = useState<ArtistNode | null>(null);
   const [panelArtist, setPanelArtist] = useState<Pick<ArtistSearchResult, "id" | "name" | "mbid"> | null>(null);
   const [activeTagFilters, setActiveTagFilters] = useState<string[]>([]);
@@ -42,19 +29,7 @@ export default function Home() {
   ) => {
     if (!options.preserveCurrentGraph) {
       setSelectedArtist(null);
-      setGraph({
-        status: "loading",
-        graphId: null,
-        nodes: [],
-        edges: [],
-        communities: [],
-        meta: {
-          seedArtistId: artist.id,
-          depth: 1,
-          limit: 100,
-          algorithm: "loading"
-        }
-      });
+      setGraph(createLoadingGraph(artist.id));
     }
 
     try {
@@ -64,19 +39,7 @@ export default function Home() {
       }
     } catch {
       if (!options.preserveCurrentGraph) {
-        setGraph({
-          status: "error",
-          graphId: null,
-          nodes: [],
-          edges: [],
-          communities: [],
-          meta: {
-            seedArtistId: artist.id,
-            depth: 1,
-            limit: 100,
-            algorithm: "error"
-          }
-        });
+        setGraph(createErrorGraph(artist.id));
       }
     }
   }, []);
@@ -166,13 +129,16 @@ export default function Home() {
 
       <section className="topRightSearch" aria-label="Artist search">
         <SearchBar
-          onGraphLoaded={setGraph}
+          graphLoadError={graph.status === "error" ? "Graph unavailable" : null}
           onArtistSelected={(artist) => {
             setSelectedArtist(null);
             setPanelArtist(artist);
+            if (artist) {
+              void loadGraphForArtist(artist);
+            }
           }}
           onClear={() => {
-            setGraph(emptyGraph);
+            setGraph(createIdleGraph());
             setSelectedArtist(null);
             setPanelArtist(null);
             setTagsByArtistId({});

@@ -16,6 +16,7 @@ import {
   isGraphStructureEnrichmentResponse,
   isGraphTagsEnrichmentResponse
 } from "@discovr/contracts";
+import { GRAPH_DEFAULT_DEPTH, GRAPH_DEFAULT_LIMIT } from "@/lib/graph-snapshot";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
@@ -51,7 +52,7 @@ export async function searchArtists(query: string): Promise<ArtistSearchResult[]
 
 export async function loadArtistGraph(artistId: string): Promise<GetArtistGraphResponse> {
   const response = await fetch(
-    `${apiBaseUrl}/api/graphs/artist/${encodeURIComponent(artistId)}?depth=1&limit=100`
+    `${apiBaseUrl}/api/graphs/artist/${encodeURIComponent(artistId)}?depth=${GRAPH_DEFAULT_DEPTH}&limit=${GRAPH_DEFAULT_LIMIT}`
   );
 
   if (!response.ok) {

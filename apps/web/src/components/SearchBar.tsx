@@ -6,19 +6,20 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { loadArtistGraph, searchArtists } from "@/lib/api";
+import { searchArtists } from "@/lib/api";
 import { panelSurfaceClassName, searchDropdownCardClassName } from "@/lib/panel";
 import { isEchoSearchResult, matchesSearchPrefix } from "@/lib/search";
-import type { ArtistSearchResult, GraphSnapshot } from "@/lib/types";
+import type { ArtistSearchResult } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  onGraphLoaded: (graph: GraphSnapshot) => void;
   onArtistSelected: (artist: Pick<ArtistSearchResult, "id" | "name" | "mbid"> | null) => void;
   onClear: () => void;
+  /** Shown when the parent graph load fails after a search selection. */
+  graphLoadError?: string | null;
 };
 
-export function SearchBar({ onGraphLoaded, onArtistSelected, onClear }: Props) {
+export function SearchBar({ onArtistSelected, onClear, graphLoadError = null }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const latestQueryRef = useRef("");
   const [query, setQuery] = useState("");
@@ -87,33 +88,12 @@ export function SearchBar({ onGraphLoaded, onArtistSelected, onClear }: Props) {
     };
   }, [isSelectionLocked, normalizedQuery]);
 
-  async function selectArtist(artist: ArtistSearchResult) {
+  function selectArtist(artist: ArtistSearchResult) {
     setIsSelectionLocked(true);
     setQuery(artist.name);
     setResults([]);
+    setError(null);
     onArtistSelected({ id: artist.id, name: artist.name, mbid: artist.mbid ?? null });
-    onGraphLoaded({
-      status: "loading",
-      graphId: null,
-      nodes: [],
-      edges: [],
-      communities: [],
-      meta: { seedArtistId: artist.id, depth: 1, limit: 100, algorithm: "loading" }
-    });
-
-    try {
-      onGraphLoaded(await loadArtistGraph(artist.id));
-    } catch {
-      setError("Graph unavailable");
-      onGraphLoaded({
-        status: "error",
-        graphId: null,
-        nodes: [],
-        edges: [],
-        communities: [],
-        meta: { seedArtistId: artist.id, depth: 1, limit: 100, algorithm: "error" }
-      });
-    }
   }
 
   function clearSearch() {
@@ -162,7 +142,7 @@ export function SearchBar({ onGraphLoaded, onArtistSelected, onClear }: Props) {
           </Button>
         )}
       </div>
-      {(visibleResults.length > 0 || error || isSearching) && (
+      {(visibleResults.length > 0 || error || isSearching || graphLoadError) && (
         <Card className={cn("searchResults gap-0 py-1.5", searchDropdownCardClassName)} size="sm">
           <CardContent className="p-1.5">
             <ul role="listbox" aria-label="Artist search results" className="m-0 list-none p-0">
@@ -174,6 +154,11 @@ export function SearchBar({ onGraphLoaded, onArtistSelected, onClear }: Props) {
               {error && (
                 <li className="searchStatus" role="option">
                   {error}
+                </li>
+              )}
+              {graphLoadError && (
+                <li className="searchStatus" role="option">
+                  {graphLoadError}
                 </li>
               )}
               {visibleResults.map((artist) => (
