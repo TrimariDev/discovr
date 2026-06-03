@@ -1,33 +1,98 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
 :root {
   color-scheme: dark;
-  --bg: #08090d;
-  --panel: rgba(17, 20, 28, 0.82);
-  --panel-strong: rgba(17, 20, 28, 0.94);
-  --line: rgba(255, 255, 255, 0.12);
-  --text: #f4f7fb;
-  --muted: #98a2b3;
-  --accent: #4dd7a8;
+  --discovr-bg: #06070b;
+  --discovr-surface: rgba(22, 28, 40, 0.8);
+  --discovr-panel: var(--discovr-surface);
+  --discovr-panel-strong: var(--discovr-surface);
+  --discovr-line: rgba(255, 255, 255, 0.16);
+  --discovr-text: #f4f7fb;
+  --discovr-muted: #98a2b3;
+  --discovr-accent: #4dd7a8;
+  --radius: 0.5rem;
 }
 
-* {
-  box-sizing: border-box;
+.dark {
+  --background: var(--discovr-bg);
+  --foreground: var(--discovr-text);
+  --card: var(--discovr-surface);
+  --card-foreground: var(--discovr-text);
+  --popover: var(--discovr-surface);
+  --popover-foreground: var(--discovr-text);
+  --primary: var(--discovr-accent);
+  --primary-foreground: #0a1210;
+  --secondary: rgba(255, 255, 255, 0.08);
+  --secondary-foreground: var(--discovr-text);
+  --muted: rgba(255, 255, 255, 0.06);
+  --muted-foreground: var(--discovr-muted);
+  --accent: rgba(77, 215, 168, 0.14);
+  --accent-foreground: var(--discovr-accent);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: var(--discovr-line);
+  --input: var(--discovr-line);
+  --ring: color-mix(in srgb, var(--discovr-accent) 55%, transparent);
+  --discovr-surface-dropdown: rgba(22, 28, 40, 0.92);
 }
 
-html,
-body {
-  height: 100%;
-  margin: 0;
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-discovr-surface-dropdown: rgba(22, 28, 40, 0.92);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
 }
 
-body {
-  background: radial-gradient(circle at 20% 15%, rgba(77, 215, 168, 0.14), transparent 30%), var(--bg);
-  color: var(--text);
-  font-family: Arial, Helvetica, sans-serif;
-}
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    box-sizing: border-box;
+  }
 
-button,
-input {
-  font: inherit;
+  html {
+    @apply font-sans;
+  }
+
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    @apply text-foreground;
+    background: radial-gradient(circle at 20% 15%, rgba(77, 215, 168, 0.14), transparent 30%), var(--discovr-bg);
+    font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
 }
 
 .appShell {
@@ -39,7 +104,6 @@ input {
 .topLeftHeader {
   left: 24px;
   max-width: min(520px, calc(100vw - 48px));
-  padding: 18px 18px 16px;
   position: fixed;
   top: 24px;
   z-index: 10;
@@ -49,23 +113,19 @@ input {
   position: fixed;
   right: 24px;
   top: 24px;
-  z-index: 10;
+  z-index: 30;
 }
 
 .tagEnrichmentStatus {
-  color: var(--muted);
-  font-size: 12px;
+  @apply text-muted-foreground text-xs;
   margin: 8px 0 0;
   max-width: min(460px, 42vw);
 }
 
 .eyebrow {
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 700;
+  @apply text-primary text-xs font-bold uppercase;
   letter-spacing: 0;
   margin: 0 0 6px;
-  text-transform: uppercase;
 }
 
 h1 {
@@ -74,92 +134,31 @@ h1 {
   margin: 0;
 }
 
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(18px);
-}
-
 .search {
   min-width: min(460px, 42vw);
   position: relative;
 }
 
 .searchField {
-  isolation: isolate;
   position: relative;
 }
 
-.searchField input {
-  background: var(--panel-strong);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  color: var(--text);
-  outline: none;
-  padding: 14px 52px 14px 16px;
-  width: 100%;
-}
-
-.searchClear {
-  align-items: center;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  display: flex;
-  height: 28px;
-  border: 0;
-  color: var(--accent);
-  cursor: pointer;
-  font-size: 18px;
-  font-weight: 700;
-  justify-content: center;
-  line-height: 1;
-  padding: 0;
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 1;
-  width: 28px;
-}
-
-.searchClear:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #8ff0c9;
+.searchResults[data-slot="card"] {
+  background-color: var(--discovr-surface-dropdown);
 }
 
 .searchResults {
-  background: var(--panel-strong);
   left: 0;
   list-style: none;
   margin: 8px 0 0;
-  padding: 6px;
   position: absolute;
   right: 0;
   z-index: 2;
 }
 
-.searchResults button,
-.iconButton {
-  background: transparent;
-  border: 0;
-  color: var(--text);
-  cursor: pointer;
-}
-
-.searchResults button {
-  border-radius: 6px;
-  display: block;
+.searchStatus {
+  @apply text-muted-foreground text-sm;
   padding: 10px;
-  text-align: left;
-  width: 100%;
-}
-
-.searchResults button:hover,
-.iconButton:hover {
-  background: rgba(255, 255, 255, 0.08);
 }
 
 .graphCanvas {
@@ -175,8 +174,8 @@ h1 {
 
 .graphPlaceholder {
   align-items: center;
-  background: radial-gradient(circle at 20% 15%, rgba(77, 215, 168, 0.14), transparent 30%), var(--bg);
-  color: var(--muted);
+  background: radial-gradient(circle at 20% 15%, rgba(77, 215, 168, 0.14), transparent 30%), var(--discovr-bg);
+  @apply text-muted-foreground;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -190,9 +189,7 @@ h1 {
 }
 
 .graphPlaceholder strong {
-  color: var(--text);
-  font-size: 18px;
-  font-weight: 600;
+  @apply text-foreground text-lg font-semibold;
 }
 
 .graphPlaceholder p {
@@ -203,7 +200,7 @@ h1 {
 .graphSpinner {
   animation: graphSpin 0.9s linear infinite;
   border: 2px solid rgba(255, 255, 255, 0.12);
-  border-top-color: var(--accent);
+  border-top-color: var(--discovr-accent);
   border-radius: 50%;
   height: 28px;
   width: 28px;
@@ -215,28 +212,14 @@ h1 {
   }
 }
 
-.searchStatus {
-  color: var(--muted);
-  font-size: 13px;
-  padding: 10px;
-}
-
 .communityLegend {
   bottom: 24px;
   left: 24px;
-  max-width: min(280px, calc(100vw - 48px));
-  padding: 12px 14px;
+  max-height: none;
+  max-width: min(360px, calc(100vw - 48px));
+  overflow: visible;
   position: fixed;
   z-index: 10;
-}
-
-.communityLegendTitle {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  margin: 0 0 8px;
-  text-transform: uppercase;
 }
 
 .communityLegendList {
@@ -245,8 +228,7 @@ h1 {
   gap: 6px;
   list-style: none;
   margin: 0;
-  max-height: 180px;
-  overflow: auto;
+  overflow: visible;
   padding: 0;
 }
 
@@ -254,6 +236,7 @@ h1 {
   align-items: center;
   display: flex;
   gap: 8px;
+  min-width: 0;
 }
 
 .communityLegendSwatch {
@@ -264,35 +247,7 @@ h1 {
 }
 
 .communityLegendLabel {
-  color: var(--text);
-  font-size: 12px;
-  line-height: 1.3;
-}
-
-.graphControls {
-  bottom: 24px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: flex-end;
-  max-width: min(360px, calc(100vw - 48px));
-  padding: 10px 12px;
-  position: fixed;
-  right: 24px;
-  z-index: 10;
-}
-
-.graphControlButton {
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: var(--text);
-  font-size: 12px;
-  padding: 8px 10px;
-}
-
-.graphControlButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
+  @apply text-foreground min-w-0 flex-1 truncate text-xs leading-snug;
 }
 
 .floatingPanel {
@@ -301,47 +256,16 @@ h1 {
 }
 
 .artistPanel {
-  max-height: calc(100vh - 48px);
-  overflow: auto;
-  padding: 18px;
   right: 24px;
   top: 112px;
   width: min(460px, 42vw);
-}
-
-.closeCircleButton {
-  align-items: center;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  color: var(--text);
-  cursor: pointer;
-  display: flex;
-  height: 32px;
-  justify-content: center;
-  line-height: 1;
-  padding: 0;
-  position: absolute;
-  right: 12px;
-  top: 12px;
-  width: 32px;
-}
-
-.closeCircleButton:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.closeCircleButton span {
-  font-size: 20px;
-  font-weight: 700;
-  margin-top: -1px;
 }
 
 .tagList {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 12px 0 0;
+  margin: 0;
   padding: 0;
 }
 
@@ -351,62 +275,25 @@ h1 {
   padding: 0;
 }
 
-.tagBadge {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--muted);
-  cursor: pointer;
-  padding: 6px 9px;
-  text-transform: lowercase;
-}
-
-.tagBadge:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text);
-}
-
-.tagBadgeActive {
-  border-color: rgba(77, 215, 168, 0.6);
-  color: var(--text);
-}
-
-.artistTitle {
-  margin: 12px 0 6px;
-}
-
-.mutedLine {
-  color: var(--muted);
-  margin: 0 0 10px;
-}
-
 .artistSummary {
-  color: var(--text);
-  line-height: 1.45;
-  margin: 12px 0 0;
+  @apply text-foreground m-0 leading-relaxed;
 }
 
 .topTracks {
-  margin-top: 14px;
+  @apply m-0 flex flex-col gap-2;
 }
 
 .topTracks ol {
-  margin: 10px 0 0;
-  padding-left: 18px;
+  @apply m-0 list-decimal pl-5;
 }
 
 .topTracks li {
-  color: var(--muted);
+  @apply text-muted-foreground;
   margin: 6px 0;
 }
 
 .topTracks a {
-  color: var(--text);
-  text-decoration: none;
-}
-
-.topTracks a:hover {
-  text-decoration: underline;
+  @apply text-foreground no-underline hover:underline;
 }
 
 @media (max-width: 760px) {
@@ -431,7 +318,8 @@ h1 {
     left: 16px;
     right: 16px;
     top: auto;
-    bottom: 84px;
+    bottom: 16px;
+    max-height: min(70vh, calc(100vh - 120px));
     width: auto;
   }
 }
