@@ -1,7 +1,12 @@
 "use client";
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { communityColor } from "@/lib/graph";
+import { glassCardClassName, panelX } from "@/lib/panel";
 import type { GraphCommunity } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+const MAX_CLUSTERS = 8;
 
 type Props = {
   communities: GraphCommunity[];
@@ -13,19 +18,44 @@ export function CommunityLegend({ communities, visible }: Props) {
     return null;
   }
 
-  const items = [...communities].sort((left, right) => left.id - right.id).slice(0, 8);
+  const items = [...communities].sort((left, right) => left.id - right.id).slice(0, MAX_CLUSTERS);
 
   return (
-    <section className="communityLegend panel" aria-label="Community legend">
-      <p className="communityLegendTitle">Clusters</p>
-      <ul className="communityLegendList">
-        {items.map((community) => (
-          <li key={community.id}>
-            <span className="communityLegendSwatch" style={{ backgroundColor: communityColor(community.id) }} />
-            <span className="communityLegendLabel">{community.label || `Cluster ${community.id}`}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <Card
+      className={cn(
+        "communityLegend flex h-fit max-h-none flex-col gap-0 overflow-visible py-0",
+        glassCardClassName
+      )}
+      size="sm"
+      aria-label="Community legend"
+    >
+      <CardHeader
+        className={cn(
+          "grid-rows-none flex shrink-0 flex-col border-b border-border/50 pt-4 pb-4",
+          panelX
+        )}
+      >
+        <CardTitle className="text-muted-foreground text-xs font-bold tracking-wide uppercase">
+          Clusters
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent className={cn("overflow-visible py-4", panelX)}>
+        <ul className="communityLegendList">
+          {items.map((community) => {
+            const label = community.label || `Cluster ${community.id}`;
+
+            return (
+              <li key={community.id}>
+                <span className="communityLegendSwatch" style={{ backgroundColor: communityColor(community.id) }} />
+                <span className="communityLegendLabel" title={label}>
+                  {label}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }

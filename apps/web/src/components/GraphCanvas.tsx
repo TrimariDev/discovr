@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, type MutableRefObject } from "react";
 import type Graphology from "graphology";
 import type Sigma from "sigma";
 import { titleCaseArtistName } from "@discovr/contracts";
@@ -20,6 +20,7 @@ type Props = {
   tagsByArtistId: Record<string, string[]>;
   viewResetNonce: number;
   focusSeedNonce: number;
+  preserveViewportOnRecenterRef: MutableRefObject<boolean>;
   onRecenterArtist: (artist: ArtistNode) => void;
   onSelectArtist: (artist: ArtistNode | null) => void;
 };
@@ -247,6 +248,7 @@ export function GraphCanvas({
   tagsByArtistId,
   viewResetNonce,
   focusSeedNonce,
+  preserveViewportOnRecenterRef,
   onRecenterArtist,
   onSelectArtist
 }: Props) {
@@ -263,6 +265,8 @@ export function GraphCanvas({
   const onRecenterRef = useRef(onRecenterArtist);
   const onSelectRef = useRef(onSelectArtist);
   const defaultCameraRef = useRef<CameraState | null>(null);
+  const preservedCameraRef = useRef<CameraState | null>(null);
+  const lastAppliedFocusNonceRef = useRef(0);
   const filterContextRef = useRef<FilterContext>({
     activeTagFilters: [],
     tagsByArtistId: {},
@@ -359,7 +363,14 @@ export function GraphCanvas({
     const graphology = graphologyRef.current;
     const seedId = graph.meta.seedArtistId;
 
-    if (!renderer || !graphology || graph.status !== "ready" || focusSeedNonce === 0 || !seedId) {
+    if (
+      !renderer ||
+      !graphology ||
+      graph.status !== "ready" ||
+      focusSeedNonce === 0 ||
+      focusSeedNonce === lastAppliedFocusNonceRef.current ||
+      !seedId
+    ) {
       return;
     }
 
@@ -372,6 +383,8 @@ export function GraphCanvas({
     if (!seedNode) {
       return;
     }
+
+    lastAppliedFocusNonceRef.current = focusSeedNonce;
 
     const baseline = defaultCameraRef.current ?? renderer.getCamera().getState();
 
@@ -512,7 +525,17 @@ export function GraphCanvas({
 
       syncNodeFilterVisuals(graphology, filterContextRef.current);
       renderer.refresh();
-      defaultCameraRef.current = captureDefaultCamera(renderer);
+
+      const preservedCamera = preservedCameraRef.current;
+      preservedCameraRef.current = null;
+
+      if (preservedCamera) {
+        renderer.getCamera().setState(preservedCamera);
+        defaultCameraRef.current = preservedCamera;
+      } else {
+        defaultCameraRef.current = captureDefaultCamera(renderer);
+      }
+
       disableAutoRescale(renderer);
 
       prevTagFilterKeyRef.current = filterSelectionKey(filterContextRef.current.activeTagFilters);
@@ -602,6 +625,11 @@ export function GraphCanvas({
     return () => {
       cancelled = true;
       window.cancelAnimationFrame(animationFrame);
+      if (preserveViewportOnRecenterRef.current && sigmaRef.current) {
+        preservedCameraRef.current = sigmaRef.current.getCamera().getState();
+        preserveViewportOnRecenterRef.current = false;
+      }
+
       if (graphologyRef.current) {
         const latestPositions = new Map<string, { x: number; y: number }>();
 

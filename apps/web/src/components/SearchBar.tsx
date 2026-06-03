@@ -2,9 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { titleCaseArtistName } from "@discovr/contracts";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { loadArtistGraph, searchArtists } from "@/lib/api";
+import { panelSurfaceClassName, searchDropdownCardClassName } from "@/lib/panel";
 import { isEchoSearchResult, matchesSearchPrefix } from "@/lib/search";
 import type { ArtistSearchResult, GraphSnapshot } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 type Props = {
   onGraphLoaded: (graph: GraphSnapshot) => void;
@@ -118,7 +124,6 @@ export function SearchBar({ onGraphLoaded, onArtistSelected, onClear }: Props) {
     onArtistSelected(null);
     onClear();
 
-    // Restore focus after clearing state, so typing can resume immediately.
     requestAnimationFrame(() => {
       inputRef.current?.focus();
     });
@@ -127,7 +132,7 @@ export function SearchBar({ onGraphLoaded, onArtistSelected, onClear }: Props) {
   return (
     <div className="search">
       <div className="searchField" suppressHydrationWarning>
-        <input
+        <Input
           ref={inputRef}
           aria-label="Search artist"
           autoComplete="off"
@@ -137,6 +142,7 @@ export function SearchBar({ onGraphLoaded, onArtistSelected, onClear }: Props) {
           data-bwignore="true"
           placeholder="Search an artist"
           value={query}
+          className={cn("h-11 pr-10 text-base shadow-sm", panelSurfaceClassName)}
           onChange={(event) => {
             setIsSelectionLocked(false);
             setError(null);
@@ -144,23 +150,47 @@ export function SearchBar({ onGraphLoaded, onArtistSelected, onClear }: Props) {
           }}
         />
         {(normalizedQuery.length > 0 || isSelectionLocked) && (
-          <button type="button" className="searchClear" aria-label="Clear search" onClick={clearSearch}>
-            <span aria-hidden="true">×</span>
-          </button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            className="absolute top-1/2 right-2.5 -translate-y-1/2 text-primary"
+            aria-label="Clear search"
+            onClick={clearSearch}
+          >
+            <X className="size-4" />
+          </Button>
         )}
       </div>
       {(visibleResults.length > 0 || error || isSearching) && (
-        <ul className="searchResults panel" role="listbox" aria-label="Artist search results">
-          {isSearching && <li className="searchStatus">Searching…</li>}
-          {error && <li className="searchStatus">{error}</li>}
-          {visibleResults.map((artist) => (
-            <li key={artist.id}>
-              <button type="button" onClick={() => selectArtist(artist)}>
-                {titleCaseArtistName(artist.name)}
-              </button>
-            </li>
-          ))}
-        </ul>
+        <Card className={cn("searchResults gap-0 py-1.5", searchDropdownCardClassName)} size="sm">
+          <CardContent className="p-1.5">
+            <ul role="listbox" aria-label="Artist search results" className="m-0 list-none p-0">
+              {isSearching && (
+                <li className="searchStatus" role="option">
+                  Searching…
+                </li>
+              )}
+              {error && (
+                <li className="searchStatus" role="option">
+                  {error}
+                </li>
+              )}
+              {visibleResults.map((artist) => (
+                <li key={artist.id} role="option">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-auto w-full justify-start px-2.5 py-2.5 text-left font-normal"
+                    onClick={() => selectArtist(artist)}
+                  >
+                    {titleCaseArtistName(artist.name)}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

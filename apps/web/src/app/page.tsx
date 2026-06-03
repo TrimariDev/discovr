@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArtistPanel } from "@/components/ArtistPanel";
 import { CommunityLegend } from "@/components/CommunityLegend";
 import { GraphCanvas } from "@/components/GraphCanvas";
-import { GraphControls } from "@/components/GraphControls";
 import { SearchBar } from "@/components/SearchBar";
+import { Card, CardContent } from "@/components/ui/card";
+import { glassCardClassName } from "@/lib/panel";
+import { cn } from "@/lib/utils";
 import { enrichGraphStructure, loadArtistGraph } from "@/lib/api";
 import type { ArtistNode, ArtistSearchResult, GraphSnapshot } from "@/lib/types";
 
@@ -32,6 +34,7 @@ export default function Home() {
   const [tagsEnrichmentStatus, setTagsEnrichmentStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [viewResetNonce, setViewResetNonce] = useState(0);
   const [focusSeedNonce, setFocusSeedNonce] = useState(0);
+  const preserveViewportOnRecenterRef = useRef(false);
 
   const loadGraphForArtist = useCallback(async (
     artist: Pick<ArtistNode, "id" | "name">,
@@ -79,6 +82,7 @@ export default function Home() {
   }, []);
 
   const recenterArtist = useCallback((artist: ArtistNode) => {
+    preserveViewportOnRecenterRef.current = true;
     void loadGraphForArtist(artist, { preserveCurrentGraph: true });
   }, [loadGraphForArtist]);
 
@@ -149,14 +153,16 @@ export default function Home() {
 
   return (
     <main className="appShell">
-      <section className="topLeftHeader panel" aria-label="Title">
-        <p className="eyebrow">Discovr</p>
-        <h1>
-          Discover music
-          <br />
-          as a living map
-        </h1>
-      </section>
+      <Card className={cn("topLeftHeader gap-0 py-4", glassCardClassName)} size="sm" aria-label="Title">
+        <CardContent className="px-4.5">
+          <p className="eyebrow">Discovr</p>
+          <h1>
+            Discover music
+            <br />
+            as a living map
+          </h1>
+        </CardContent>
+      </Card>
 
       <section className="topRightSearch" aria-label="Artist search">
         <SearchBar
@@ -185,14 +191,6 @@ export default function Home() {
 
       <CommunityLegend communities={graph.communities} visible={graph.status === "ready" && graph.nodes.length > 0} />
 
-      <GraphControls
-        visible={graph.status === "ready" && graph.nodes.length > 0}
-        hasActiveFilters={activeTagFilters.length > 0}
-        onResetView={() => setViewResetNonce((value) => value + 1)}
-        onFocusSeed={() => setFocusSeedNonce((value) => value + 1)}
-        onClearFilters={() => setActiveTagFilters([])}
-      />
-
       <GraphCanvas
         graph={graph}
         selectedArtist={selectedArtist}
@@ -200,15 +198,33 @@ export default function Home() {
         tagsByArtistId={tagsByArtistId}
         viewResetNonce={viewResetNonce}
         focusSeedNonce={focusSeedNonce}
+        preserveViewportOnRecenterRef={preserveViewportOnRecenterRef}
         onRecenterArtist={recenterArtist}
         onSelectArtist={(artist) => {
           setSelectedArtist(artist);
-          setPanelArtist(artist ? { id: artist.id, name: artist.name, mbid: (artist as { mbid?: string | null }).mbid ?? null } : null);
+          setPanelArtist((current) => {
+            if (!artist) {
+              return null;
+            }
+            if (current?.id === artist.id) {
+              return current;
+            }
+            return {
+              id: artist.id,
+              name: artist.name,
+              mbid: (artist as { mbid?: string | null }).mbid ?? null
+            };
+          });
         }}
       />
       <ArtistPanel
         artist={panelArtist}
         activeTagFilters={activeTagFilters}
+        graphControlsVisible={graph.status === "ready" && graph.nodes.length > 0}
+        hasActiveFilters={activeTagFilters.length > 0}
+        onResetView={() => setViewResetNonce((value) => value + 1)}
+        onFocusSeed={() => setFocusSeedNonce((value) => value + 1)}
+        onClearFilters={() => setActiveTagFilters([])}
         onToggleTagFilter={(tag) => {
           const normalized = tag.trim().toLowerCase();
           setActiveTagFilters((current) =>
@@ -225,7 +241,6 @@ export default function Home() {
             return { ...current, [artistId]: normalized };
           });
         }}
-        onClose={() => { setSelectedArtist(null); setPanelArtist(null); }}
       />
     </main>
   );

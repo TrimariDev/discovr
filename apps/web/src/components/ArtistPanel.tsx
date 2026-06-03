@@ -1,29 +1,56 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { titleCaseArtistName } from "@discovr/contracts";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { loadArtistInfo } from "@/lib/api";
+import { glassCardClassName, panelX } from "@/lib/panel";
 import type { ArtistInfoResponse, ArtistSearchResult } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 type Props = {
   artist: Pick<ArtistSearchResult, "id" | "name" | "mbid"> | null;
   activeTagFilters: string[];
   onToggleTagFilter: (tag: string) => void;
   onArtistTags: (artistId: string, tags: string[]) => void;
-  onClose: () => void;
+  graphControlsVisible: boolean;
+  hasActiveFilters: boolean;
+  onResetView: () => void;
+  onFocusSeed: () => void;
+  onClearFilters: () => void;
 };
 
-export function ArtistPanel({ artist, activeTagFilters, onToggleTagFilter, onArtistTags, onClose }: Props) {
+export function ArtistPanel({
+  artist,
+  activeTagFilters,
+  onToggleTagFilter,
+  onArtistTags,
+  graphControlsVisible,
+  hasActiveFilters,
+  onResetView,
+  onFocusSeed,
+  onClearFilters
+}: Props) {
   const [details, setDetails] = useState<ArtistInfoResponse | null>(null);
   const [detailsStatus, setDetailsStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const loadedArtistIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!artist) {
+      loadedArtistIdRef.current = null;
       setDetails(null);
       setDetailsStatus("idle");
       return;
     }
 
+    if (loadedArtistIdRef.current === artist.id && detailsStatus === "ready") {
+      return;
+    }
+
     let active = true;
+    loadedArtistIdRef.current = artist.id;
     setDetails(null);
     setDetailsStatus("loading");
 
@@ -48,7 +75,7 @@ export function ArtistPanel({ artist, activeTagFilters, onToggleTagFilter, onArt
     return () => {
       active = false;
     };
-  }, [artist]);
+  }, [artist?.id, artist?.name, artist?.mbid]);
 
   const summaryText = useMemo(() => {
     const raw = details?.artist.summary ?? "";
@@ -56,7 +83,6 @@ export function ArtistPanel({ artist, activeTagFilters, onToggleTagFilter, onArt
       return "";
     }
 
-    // Last.fm returns HTML in summary and appends a "Read more on Last.fm" link.
     return raw
       .replace(/<[^>]+>/g, "")
       .replace(/\s*Read more on Last\.?fm\.?\s*/gi, " ")
@@ -68,52 +94,71 @@ export function ArtistPanel({ artist, activeTagFilters, onToggleTagFilter, onArt
     return null;
   }
 
+  const statsLine =
+    detailsStatus === "ready" && details && (details.artist.listeners || details.artist.playcount)
+      ? [
+          details.artist.listeners ? `${details.artist.listeners.toLocaleString()} listeners` : null,
+          details.artist.playcount ? `${details.artist.playcount.toLocaleString()} plays` : null
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : null;
+
+  const hasBody =
+    detailsStatus === "ready" &&
+    details &&
+    (Boolean(summaryText) || details.artist.topTracks.length > 0);
+
+  const statusLine =
+    detailsStatus === "loading"
+      ? "Loading details…"
+      : detailsStatus === "error"
+        ? "Details unavailable"
+        : null;
+
   return (
-    <aside className="artistPanel floatingPanel panel">
-      <button className="closeCircleButton" type="button" aria-label="Close artist panel" onClick={onClose}>
-        <span aria-hidden="true">×</span>
-      </button>
-      <h2 className="artistTitle">{artist.name}</h2>
+    <Card
+      className={cn("artistPanel floatingPanel flex max-h-[calc(100vh-48px)] flex-col gap-0 py-0", glassCardClassName)}
+      aria-label="Artist details"
+    >
+      <CardHeader
+        className={cn(
+          "grid-rows-none flex shrink-0 flex-col gap-3 border-b border-border/50 pt-4 pb-4",
+          panelX
+        )}
+      >
+        <div className="flex flex-col gap-1">
+          <CardTitle className="text-xl leading-tight">{titleCaseArtistName(artist.name)}</CardTitle>
+          {statusLine && <CardDescription>{statusLine}</CardDescription>}
+          {statsLine && <CardDescription>{statsLine}</CardDescription>}
+        </div>
 
-      {detailsStatus === "loading" && <p className="mutedLine">Loading details…</p>}
-      {detailsStatus === "error" && <p className="mutedLine">Details unavailable</p>}
+        {detailsStatus === "ready" && details && details.artist.tags.length > 0 && (
+          <ul className="tagList" aria-label="Top tags">
+            {details.artist.tags.slice(0, 8).map((tag: { name: string }) => {
+              const isActive = activeTagFilters.includes(tag.name.trim().toLowerCase());
 
-      {detailsStatus === "ready" && details && (
-        <>
-          {(details.artist.listeners || details.artist.playcount) && (
-            <p className="mutedLine">
-              {details.artist.listeners ? `${details.artist.listeners.toLocaleString()} listeners` : null}
-              {details.artist.listeners && details.artist.playcount ? " · " : null}
-              {details.artist.playcount ? `${details.artist.playcount.toLocaleString()} plays` : null}
-            </p>
-          )}
-
-          {details.artist.tags.length > 0 && (
-            <ul className="tagList" aria-label="Top tags">
-              {details.artist.tags.slice(0, 8).map((tag: { name: string }) => {
-                const isActive = activeTagFilters.includes(tag.name.trim().toLowerCase());
-
-                return (
-                  <li key={tag.name}>
-                    <button
-                      type="button"
-                      className={`tagBadge${isActive ? " tagBadgeActive" : ""}`}
-                      aria-pressed={isActive}
-                      onClick={() => onToggleTagFilter(tag.name)}
-                    >
+              return (
+                <li key={tag.name}>
+                  <Badge asChild variant={isActive ? "default" : "outline"} className="lowercase">
+                    <button type="button" aria-pressed={isActive} onClick={() => onToggleTagFilter(tag.name)}>
                       {tag.name}
                     </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+                  </Badge>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </CardHeader>
 
+      {hasBody && details && (
+        <CardContent className={cn("flex min-h-0 flex-1 flex-col gap-4 py-4", panelX)}>
           {summaryText && <p className="artistSummary">{summaryText}</p>}
 
           {details.artist.topTracks.length > 0 && (
             <div className="topTracks" aria-label="Top tracks">
-              <strong>Top tracks</strong>
+              <strong className="text-foreground text-sm">Top tracks</strong>
               <ol>
                 {details.artist.topTracks.slice(0, 8).map((track: { name: string; url?: string | null }) => (
                   <li key={track.name}>
@@ -129,9 +174,27 @@ export function ArtistPanel({ artist, activeTagFilters, onToggleTagFilter, onArt
               </ol>
             </div>
           )}
-        </>
+        </CardContent>
       )}
-    </aside>
+
+      {graphControlsVisible && (
+        <CardFooter
+          className={cn(
+            "mt-auto shrink-0 flex flex-wrap gap-2 border-t border-border/50 bg-transparent py-3",
+            panelX
+          )}
+        >
+          <Button type="button" variant="outline" size="sm" onClick={onResetView}>
+            Reset view
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={onFocusSeed}>
+            Focus seed
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={onClearFilters} disabled={!hasActiveFilters}>
+            Clear filters
+          </Button>
+        </CardFooter>
+      )}
+    </Card>
   );
 }
-
