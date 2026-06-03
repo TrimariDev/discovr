@@ -6,8 +6,8 @@
   "scripts": {
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api dev",
-    "build": "pnpm --filter web build && pnpm --filter api build",
-    "typecheck": "pnpm --filter web typecheck && pnpm --filter api typecheck"
+    "build": "pnpm --filter @discovr/contracts build && pnpm --filter web build && pnpm --filter api build",
+    "typecheck": "pnpm --filter @discovr/contracts typecheck && pnpm --filter web typecheck && pnpm --filter api typecheck",
+    "smoke": "node scripts/smoke.mjs"
   }
 }
-
