@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { searchArtists } from "@/lib/api";
 import { panelSurfaceClassName, searchDropdownCardClassName } from "@/lib/panel";
-import { isEchoSearchResult, matchesSearchPrefix } from "@/lib/search";
+import { isEchoSearchResult, matchesSearchQuery } from "@/lib/search";
 import type { ArtistSearchResult } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -43,7 +43,7 @@ export function SearchBar({ onArtistSelected, onClear, graphLoadError = null }: 
     return results.filter(
       (artist) =>
         !isEchoSearchResult(artist, normalizedQuery) &&
-        matchesSearchPrefix(artist.name, normalizedQuery)
+        matchesSearchQuery(artist.name, normalizedQuery)
     );
   }, [normalizedQuery, results]);
 

@@ -1,5 +1,11 @@
 import { getSimilarArtists, searchArtists } from "./lastfm.js";
 import {
+  buildSupplementalSearchQueries,
+  isEchoSearchResult,
+  matchesSearchQuery,
+  normalizeSearchText,
+  searchMatchScore,
+  SEARCH_SUPPLEMENT_MAX_EXTRA_QUERIES,
   titleCaseArtistName,
   type GraphCommunity,
   type GraphEdge,
@@ -40,31 +46,11 @@ const popularArtistHints = [
   "Arctic Monkeys"
 ];
 
-function normalizeName(name: string) {
-  return name.trim().toLowerCase().replace(/\s+/g, " ");
-}
+const normalizeName = normalizeSearchText;
 
-function isEchoOfQuery(artistName: string, artistId: string, query: string) {
-  const normalizedQuery = normalizeName(query);
-
-  if (!normalizedQuery) {
-    return false;
-  }
-
-  const normalizedName = normalizeName(artistName);
-  const normalizedId = normalizeName(artistId);
-
-  if (normalizedName === normalizedQuery || normalizedId === normalizedQuery) {
-    return true;
-  }
-
-  const compact = (value: string) => value.replace(/[^a-z0-9]+/g, "");
-
-  return (
-    compact(normalizedName) === compact(normalizedQuery) ||
-    compact(normalizedId) === compact(normalizedQuery)
-  );
-}
+const SEARCH_LASTFM_LIMIT = 50;
+const SEARCH_MAX_RESULTS = 8;
+const SEARCH_MIN_MATCHES_BEFORE_SUPPLEMENT = 4;
 
 function stableNoise(input: string) {
   let hash = 2166136261;
@@ -84,29 +70,76 @@ function imageUrlFromLastFm(images: Array<{ "#text": string; size: string }> | u
     null;
 }
 
-/** Name (or a word in it) must start with the full typed query — "Beatl" matches "Beatles", not "Beats". */
-function matchesQueryPrefix(candidate: string, query: string) {
-  return fuzzyScore(query, candidate) <= 1;
+type LastFmSearchRow = Awaited<ReturnType<typeof searchArtists>>[number];
+
+async function fetchLastFmSearchPool(query: string): Promise<LastFmSearchRow[]> {
+  const pool: LastFmSearchRow[] = [...(await searchArtists({ query, limit: SEARCH_LASTFM_LIMIT }))];
+  const seenNames = new Set(pool.map((artist) => normalizeName(artist.name)));
+
+  const countMatches = () =>
+    pool.filter(
+      (artist) =>
+        artist.name?.trim() &&
+        matchesSearchQuery(artist.name, query) &&
+        !isEchoSearchResult({ id: normalizeName(artist.name), name: artist.name }, query)
+    ).length;
+
+  if (countMatches() >= SEARCH_MIN_MATCHES_BEFORE_SUPPLEMENT) {
+    return pool;
+  }
+
+  const supplements = buildSupplementalSearchQueries(query).slice(0, SEARCH_SUPPLEMENT_MAX_EXTRA_QUERIES);
+
+  await Promise.all(
+    supplements.map(async (supplement) => {
+      const extra = await searchArtists({ query: supplement, limit: 30 });
+
+      for (const artist of extra) {
+        const key = normalizeName(artist.name);
+
+        if (!key || seenNames.has(key)) {
+          continue;
+        }
+
+        seenNames.add(key);
+        pool.push(artist);
+      }
+    })
+  );
+
+  return pool;
 }
 
-function fuzzyScore(query: string, candidate: string) {
-  const normalizedQuery = normalizeName(query);
-  const normalizedCandidate = normalizeName(candidate);
-  const words = normalizedCandidate.split(/\s+/);
+function scoreSearchCandidates(
+  query: string,
+  artists: Array<{
+    name: string;
+    mbid?: string;
+    image?: LastFmSearchRow["image"];
+    listeners?: string;
+  }>
+) {
+  const seen = new Set<string>();
 
-  if (normalizedCandidate === normalizedQuery) {
-    return 0;
-  }
+  return artists
+    .filter((artist) => artist.name?.trim())
+    .map((artist) => ({
+      artist,
+      normalizedName: normalizeName(artist.name),
+      score: searchMatchScore(query, artist.name),
+      listeners: Number(artist.listeners ?? 0),
+      hasMbid: Boolean(artist.mbid)
+    }))
+    .filter((item) => {
+      if (seen.has(item.normalizedName)) {
+        return false;
+      }
 
-  if (normalizedCandidate.startsWith(normalizedQuery) || words.some((word) => word.startsWith(normalizedQuery))) {
-    return 1;
-  }
-
-  if (normalizedCandidate.includes(normalizedQuery)) {
-    return 2;
-  }
-
-  return 3;
+      seen.add(item.normalizedName);
+      return true;
+    })
+    .filter((item) => item.score <= 1)
+    .sort((left, right) => left.score - right.score || right.listeners - left.listeners);
 }
 
 function targetPositionForArtist(input: {
@@ -131,43 +164,25 @@ function targetPositionForArtist(input: {
 
 export async function bootstrapArtistSearch(query: string): Promise<ArtistSearchResult[]> {
   const normalized = normalizeName(query);
-  const cachedResults = getCached<ArtistSearchResult[]>(`artist-search:${normalized}`);
+  const cachedResults = getCached<ArtistSearchResult[]>(`artist-search:v2:${normalized}`);
 
   if (cachedResults) {
     return cachedResults.filter(
-      (artist) => !isEchoOfQuery(artist.name, artist.id, query) && matchesQueryPrefix(artist.name, query)
+      (artist) =>
+        !isEchoSearchResult(artist, query) && matchesSearchQuery(artist.name, query)
     );
   }
 
-  const lastFmResults = await searchArtists({ query, limit: 20 });
+  const lastFmResults = await fetchLastFmSearchPool(query);
   const hintResults = popularArtistHints
-    .filter((name) => matchesQueryPrefix(name, query))
+    .filter((name) => matchesSearchQuery(name, query))
     .map((name) => ({
       name,
       mbid: undefined,
       image: undefined,
       listeners: "999999999"
     }));
-  const seen = new Set<string>();
-  const scored = [...hintResults, ...lastFmResults]
-    .filter((artist) => artist.name?.trim())
-    .map((artist) => ({
-      artist,
-      normalizedName: normalizeName(artist.name),
-      score: fuzzyScore(query, artist.name),
-      listeners: Number(artist.listeners ?? 0),
-      hasMbid: Boolean(artist.mbid)
-    }))
-    .filter((item) => {
-      if (seen.has(item.normalizedName)) {
-        return false;
-      }
-
-      seen.add(item.normalizedName);
-      return true;
-    })
-    .filter((item) => item.score <= 1)
-    .sort((left, right) => left.score - right.score || right.listeners - left.listeners);
+  const scored = scoreSearchCandidates(query, [...hintResults, ...lastFmResults]);
 
   // Last.fm "artist.search" can return low-quality pseudo-artists (often album-like titles).
   // Filter aggressively using popularity, but always keep MBID-backed artists.
@@ -176,11 +191,8 @@ export async function bootstrapArtistSearch(query: string): Promise<ArtistSearch
 
   const results = scored
     .filter((item) => item.hasMbid || item.listeners >= minListeners)
-    .filter(
-      ({ artist }) =>
-        !isEchoOfQuery(artist.name, normalizeName(artist.name), query)
-    )
-    .slice(0, 8)
+    .filter(({ artist }) => !isEchoSearchResult({ id: normalizeName(artist.name), name: artist.name }, query))
+    .slice(0, SEARCH_MAX_RESULTS)
     .map(({ artist }) => ({
       id: normalizeName(artist.name),
       name: artist.name,
@@ -189,7 +201,7 @@ export async function bootstrapArtistSearch(query: string): Promise<ArtistSearch
       tags: []
     }));
 
-  setCached(`artist-search:${normalized}`, results, 1000 * 60 * 10);
+  setCached(`artist-search:v2:${normalized}`, results, 1000 * 60 * 10);
   return results;
 }
 

@@ -42,3 +42,15 @@ export {
 } from "./api.js";
 
 export { titleCaseArtistName } from "./format.js";
+
+export {
+  buildSupplementalSearchQueries,
+  isEchoSearchResult,
+  matchesSearchQuery,
+  matchesSearchTokens,
+  normalizeSearchText,
+  searchMatchScore,
+  SEARCH_QUERY_SUFFIXES,
+  SEARCH_SUPPLEMENT_MAX_EXTRA_QUERIES,
+  SEARCH_SUPPLEMENT_MIN_QUERY_LENGTH
+} from "./search.js";
