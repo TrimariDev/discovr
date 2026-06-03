@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { communityColor } from "@/lib/graph";
-import { glassCardClassName, panelX } from "@/lib/panel";
+import { floatingPanelCardClassName, panelBodyClassName, panelHeaderClassName } from "@/lib/panel";
 import type { GraphCommunity } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -22,25 +22,17 @@ export function CommunityLegend({ communities, visible }: Props) {
 
   return (
     <Card
-      className={cn(
-        "communityLegend flex h-fit max-h-none flex-col gap-0 overflow-visible py-0",
-        glassCardClassName
-      )}
+      className={cn("communityLegend h-fit max-h-none overflow-visible", floatingPanelCardClassName)}
       size="sm"
       aria-label="Community legend"
     >
-      <CardHeader
-        className={cn(
-          "grid-rows-none flex shrink-0 flex-col border-b border-border/50 pt-4 pb-4",
-          panelX
-        )}
-      >
+      <CardHeader className={panelHeaderClassName}>
         <CardTitle className="text-muted-foreground text-xs font-bold tracking-wide uppercase">
           Clusters
         </CardTitle>
       </CardHeader>
 
-      <CardContent className={cn("overflow-visible py-4", panelX)}>
+      <CardContent className={cn(panelBodyClassName, "overflow-visible")}>
         <ul className="communityLegendList">
           {items.map((community) => {
             const label = community.label || `Cluster ${community.id}`;

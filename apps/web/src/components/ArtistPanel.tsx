@@ -6,7 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { loadArtistInfo } from "@/lib/api";
-import { glassCardClassName, panelX } from "@/lib/panel";
+import {
+  floatingPanelCardClassName,
+  panelBodyClassName,
+  panelFooterClassName,
+  panelHeaderClassName
+} from "@/lib/panel";
 import type { ArtistInfoResponse, ArtistSearchResult } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -118,15 +123,13 @@ export function ArtistPanel({
 
   return (
     <Card
-      className={cn("artistPanel floatingPanel flex max-h-[calc(100vh-48px)] flex-col gap-0 py-0", glassCardClassName)}
+      className={cn(
+        "artistPanel floatingPanel max-h-[calc(100vh-48px)]",
+        floatingPanelCardClassName
+      )}
       aria-label="Artist details"
     >
-      <CardHeader
-        className={cn(
-          "grid-rows-none flex shrink-0 flex-col gap-3 border-b border-border/50 pt-4 pb-4",
-          panelX
-        )}
-      >
+      <CardHeader className={panelHeaderClassName}>
         <div className="flex flex-col gap-1">
           <CardTitle className="text-xl leading-tight">{titleCaseArtistName(artist.name)}</CardTitle>
           {statusLine && <CardDescription>{statusLine}</CardDescription>}
@@ -153,7 +156,7 @@ export function ArtistPanel({
       </CardHeader>
 
       {hasBody && details && (
-        <CardContent className={cn("flex min-h-0 flex-1 flex-col gap-4 py-4", panelX)}>
+        <CardContent className={cn(panelBodyClassName, "flex min-h-0 flex-1 flex-col gap-4")}>
           {summaryText && <p className="artistSummary">{summaryText}</p>}
 
           {details.artist.topTracks.length > 0 && (
@@ -178,12 +181,7 @@ export function ArtistPanel({
       )}
 
       {graphControlsVisible && (
-        <CardFooter
-          className={cn(
-            "mt-auto shrink-0 flex flex-wrap gap-2 border-t border-border/50 bg-transparent py-3",
-            panelX
-          )}
-        >
+        <CardFooter className={panelFooterClassName}>
           <Button type="button" variant="outline" size="sm" onClick={onResetView}>
             Reset view
           </Button>

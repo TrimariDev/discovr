@@ -143,10 +143,6 @@ h1 {
   position: relative;
 }
 
-.searchResults[data-slot="card"] {
-  background-color: var(--discovr-surface-dropdown);
-}
-
 .searchResults {
   left: 0;
   list-style: none;

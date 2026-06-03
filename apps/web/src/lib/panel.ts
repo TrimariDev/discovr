@@ -18,3 +18,21 @@ export const searchDropdownCardClassName = cn(
 
 /** Shared horizontal inset for panel header, body, and footer. */
 export const panelX = "px-4";
+
+/** Floating card shell (artist panel, legend, title). */
+export const floatingPanelCardClassName = cn("flex flex-col gap-0 py-0", glassCardClassName);
+
+/** Title card in top-left — slightly more vertical padding than side panels. */
+export const titlePanelCardClassName = cn("flex flex-col gap-0 py-4", glassCardClassName);
+
+export const panelHeaderClassName = cn(
+  "grid-rows-none flex shrink-0 flex-col gap-3 border-b border-border/50 pt-4 pb-4",
+  panelX
+);
+
+export const panelBodyClassName = cn("py-4", panelX);
+
+export const panelFooterClassName = cn(
+  "mt-auto shrink-0 flex flex-wrap gap-2 border-t border-border/50 bg-transparent py-3",
+  panelX
+);

@@ -6,7 +6,7 @@ import { CommunityLegend } from "@/components/CommunityLegend";
 import { GraphCanvas } from "@/components/GraphCanvas";
 import { SearchBar } from "@/components/SearchBar";
 import { Card, CardContent } from "@/components/ui/card";
-import { glassCardClassName } from "@/lib/panel";
+import { panelX, titlePanelCardClassName } from "@/lib/panel";
 import { cn } from "@/lib/utils";
 import { enrichGraphStructure, loadArtistGraph } from "@/lib/api";
 import { createErrorGraph, createIdleGraph, createLoadingGraph } from "@/lib/graph-snapshot";
@@ -116,8 +116,8 @@ export default function Home() {
 
   return (
     <main className="appShell">
-      <Card className={cn("topLeftHeader gap-0 py-4", glassCardClassName)} size="sm" aria-label="Title">
-        <CardContent className="px-4.5">
+      <Card className={cn("topLeftHeader", titlePanelCardClassName)} size="sm" aria-label="Title">
+        <CardContent className={panelX}>
           <p className="eyebrow">Discovr</p>
           <h1>
             Discover music
